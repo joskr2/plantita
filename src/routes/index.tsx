@@ -34,21 +34,21 @@ export const Route = createFileRoute("/")({
 const MOCK_BANNERS: Banner[] = [
 	{
 		id: "summer-collection",
-		src: "/images/demo-banner-1.png",
+		src: "https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=1400&h=500&fit=crop&q=80",
 		alt: "Summer collection - Fresh and vibrant",
 		isActive: true,
 		isMobile: undefined,
 	},
 	{
 		id: "special-offers",
-		src: "/images/demo-banner-2.png",
+		src: "https://images.unsplash.com/photo-1466781783364-36c955e42a7f?w=1400&h=500&fit=crop&q=80",
 		alt: "Special offers - Don't miss out",
 		isActive: true,
 		isMobile: true,
 	},
 	{
 		id: "new-arrivals",
-		src: "/images/demo-banner-1.png",
+		src: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=1400&h=500&fit=crop&q=80",
 		alt: "New arrivals - Check them out",
 		isActive: true,
 		isMobile: undefined,

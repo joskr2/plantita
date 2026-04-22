@@ -4,6 +4,7 @@ import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { Header } from "@/components/header";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { Footer } from "@/components/ui/footer";
 import appCss from "../styles.css?url";
 
 const queryClient = new QueryClient();
@@ -47,7 +48,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 					</head>
 					<body>
 						<Header locale="en" />
-						{children}
+						<div className="flex flex-col min-h-svh">
+							{children}
+							<Footer locale="en" />
+						</div>
 						<TanStackDevtools
 							config={{
 								position: "bottom-right",
