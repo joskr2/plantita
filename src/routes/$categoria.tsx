@@ -1,5 +1,10 @@
-import { createFileRoute, useSearch } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	useNavigate,
+	useSearch,
+} from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
+import { z } from "zod";
 
 import { CATEGORIAS } from "@/data/categorias/categorias";
 import type { Filters, Pagination } from "@/data/categorias/index";
@@ -25,44 +30,45 @@ const PlantCard = lazy(() =>
 );
 
 export const Route = createFileRoute("/$categoria")({
-	loader: async ({ params, location }) => {
+	validateSearch: z.object({
+		priceMin: z.coerce.number().optional(),
+		priceMax: z.coerce.number().optional(),
+		inStock: z.coerce.boolean().optional(),
+		minRating: z.coerce.number().optional(),
+		page: z.coerce.number().optional(),
+	}),
+	loaderDeps: ({ search }) => {
+		return {
+			filters: {
+				priceMin: search.priceMin,
+				priceMax: search.priceMax,
+				inStock: search.inStock,
+				minRating: search.minRating,
+			},
+			page: search.page ?? 1,
+		};
+	},
+	loader: async ({ params, deps }) => {
 		const categoria = CATEGORIAS.find((c) => c.slug === params.categoria);
 
 		if (!categoria) {
 			throw new Error("Category not found");
 		}
 
-		// Parse search params for filters
-		const searchParams = new URLSearchParams(location.search.slice(1));
-		const filters: Filters = {
-			priceMin: searchParams.get("priceMin")
-				? Number(searchParams.get("priceMin"))
-				: undefined,
-			priceMax: searchParams.get("priceMax")
-				? Number(searchParams.get("priceMax"))
-				: undefined,
-			inStock:
-				searchParams.get("inStock") === "true"
-					? true
-					: searchParams.get("inStock") === "false"
-						? false
-						: undefined,
-			minRating: searchParams.get("minRating")
-				? Number(searchParams.get("minRating"))
-				: undefined,
-		};
-
 		const pagination: Pagination = {
-			page: searchParams.get("page") ? Number(searchParams.get("page")) : 1,
+			page: deps.page,
 			perPage: 12,
 		};
 
-		const result = getCategoriaPlantas(categoria.slug, filters, pagination);
+		const result = getCategoriaPlantas(
+			categoria.slug,
+			deps.filters,
+			pagination,
+		);
 
 		return {
 			categoria,
 			result,
-			filters,
 		};
 	},
 	head: ({ loaderData }) => {
@@ -88,53 +94,56 @@ export const Route = createFileRoute("/$categoria")({
 function CategoryPage() {
 	const locale: Locale = "es";
 	const t = translations[locale];
+	const navigate = useNavigate({ from: "/$categoria" });
 
-	const { categoria, result, filters } = Route.useLoaderData();
+	const { categoria, result } = Route.useLoaderData();
 
 	const search = useSearch({ from: "/$categoria" });
 
-	const pagination: Pagination = {
-		page: search.page ? Number(search.page) : 1,
-		perPage: 12,
+	const PER_PAGE = 12;
+
+	const filters: Filters = {
+		priceMin: search.priceMin,
+		priceMax: search.priceMax,
+		inStock: search.inStock,
+		minRating: search.minRating,
 	};
 
 	const handleFiltersChange = (newFilters: Filters) => {
-		const params = new URLSearchParams();
-		if (newFilters.priceMin !== undefined)
-			params.set("priceMin", String(newFilters.priceMin));
-		if (newFilters.priceMax !== undefined)
-			params.set("priceMax", String(newFilters.priceMax));
-		if (newFilters.inStock !== undefined)
-			params.set("inStock", String(newFilters.inStock));
-		if (newFilters.minRating !== undefined)
-			params.set("minRating", String(newFilters.minRating));
-		if (pagination.page > 1) params.set("page", String(pagination.page));
-		const searchStr = params.toString();
-		window.location.search = searchStr ? `?${searchStr}` : "";
+		void navigate({
+			to: "/$categoria",
+			params: { categoria: categoria.slug },
+			search: {
+				priceMin: newFilters.priceMin,
+				priceMax: newFilters.priceMax,
+				inStock: newFilters.inStock,
+				minRating: newFilters.minRating,
+				page: 1,
+			},
+		});
 	};
 
 	const handleClearAll = () => {
-		window.location.search = "";
+		void navigate({
+			to: "/$categoria",
+			params: { categoria: categoria.slug },
+			search: { page: 1 },
+		});
 	};
 
 	const handlePageChange = (page: number) => {
-		const params = new URLSearchParams();
-		if (filters?.priceMin !== undefined)
-			params.set("priceMin", String(filters.priceMin));
-		if (filters?.priceMax !== undefined)
-			params.set("priceMax", String(filters.priceMax));
-		if (filters?.inStock !== undefined)
-			params.set("inStock", String(filters.inStock));
-		if (filters?.minRating !== undefined)
-			params.set("minRating", String(filters.minRating));
-		if (page > 1) params.set("page", String(page));
-		const searchStr = params.toString();
-		window.location.search = searchStr ? `?${searchStr}` : "";
+		void navigate({
+			to: "/$categoria",
+			params: { categoria: categoria.slug },
+			search: {
+				...search,
+				page,
+			},
+		});
 	};
 
-	const startItem =
-		result.total > 0 ? (pagination.page - 1) * pagination.perPage + 1 : 0;
-	const endItem = Math.min(pagination.page * pagination.perPage, result.total);
+	const startItem = result.total > 0 ? (result.page - 1) * PER_PAGE + 1 : 0;
+	const endItem = Math.min(result.page * PER_PAGE, result.total);
 
 	return (
 		<div className="flex flex-col gap-6 py-6">

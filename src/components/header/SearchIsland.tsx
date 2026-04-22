@@ -85,7 +85,6 @@ export function SearchIsland({
 			setInternalExpanded(false);
 		}
 		setQuery("");
-		setDebouncedQuery("");
 		onExpandChange?.(false);
 	}
 
