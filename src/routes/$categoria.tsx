@@ -1,14 +1,87 @@
-import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
-import { FilterBar } from "@/components/category/FilterBar";
-import { Pagination as PaginationComponent } from "@/components/category/Pagination";
-import { PlantCard } from "@/components/plant/PlantCard";
+import { createFileRoute, useSearch } from "@tanstack/react-router";
+import { lazy, Suspense } from "react";
+
 import { CATEGORIAS } from "@/data/categorias/categorias";
 import type { Filters, Pagination } from "@/data/categorias/index";
 import { getCategoriaPlantas } from "@/data/categorias/index";
 import type { Locale } from "@/i18n/translations";
 import { translations } from "@/i18n/translations";
 
+// Lazy load client-only components
+const FilterBar = lazy(() =>
+	import("@/components/category/FilterBar").then((m) => ({
+		default: m.FilterBar,
+	})),
+);
+const PaginationComponent = lazy(() =>
+	import("@/components/category/Pagination").then((m) => ({
+		default: m.Pagination,
+	})),
+);
+const PlantCard = lazy(() =>
+	import("@/components/plant/PlantCard").then((m) => ({
+		default: m.PlantCard,
+	})),
+);
+
 export const Route = createFileRoute("/$categoria")({
+	loader: async ({ params, location }) => {
+		const categoria = CATEGORIAS.find((c) => c.slug === params.categoria);
+
+		if (!categoria) {
+			throw new Error("Category not found");
+		}
+
+		// Parse search params for filters
+		const searchParams = new URLSearchParams(location.search.slice(1));
+		const filters: Filters = {
+			priceMin: searchParams.get("priceMin")
+				? Number(searchParams.get("priceMin"))
+				: undefined,
+			priceMax: searchParams.get("priceMax")
+				? Number(searchParams.get("priceMax"))
+				: undefined,
+			inStock:
+				searchParams.get("inStock") === "true"
+					? true
+					: searchParams.get("inStock") === "false"
+						? false
+						: undefined,
+			minRating: searchParams.get("minRating")
+				? Number(searchParams.get("minRating"))
+				: undefined,
+		};
+
+		const pagination: Pagination = {
+			page: searchParams.get("page") ? Number(searchParams.get("page")) : 1,
+			perPage: 12,
+		};
+
+		const result = getCategoriaPlantas(categoria.slug, filters, pagination);
+
+		return {
+			categoria,
+			result,
+			filters,
+		};
+	},
+	head: ({ loaderData }) => {
+		if (!loaderData?.categoria) {
+			return { meta: [{ title: "Categoría no encontrada | Tiendita" }] };
+		}
+		return {
+			meta: [
+				{ title: `${loaderData.categoria.nombre} | Tiendita` },
+				{
+					name: "description",
+					content:
+						loaderData.categoria.descripcion ??
+						`Explora nuestra colección de plantas ${loaderData.categoria.nombre}`,
+				},
+			],
+		};
+	},
+	pendingComponent: () => <CategorySkeleton />,
 	component: CategoryPage,
 });
 
@@ -16,55 +89,14 @@ function CategoryPage() {
 	const locale: Locale = "es";
 	const t = translations[locale];
 
-	// Get route params
-	const params = Route.useParams();
+	const { categoria, result, filters } = Route.useLoaderData();
 
-	// Get search params for filters and pagination
-	const search = useSearch({
-		from: "/$categoria",
-	});
+	const search = useSearch({ from: "/$categoria" });
 
-	// Parse filters from search params
-	const filters: Filters = {
-		priceMin: search.priceMin ? Number(search.priceMin) : undefined,
-		priceMax: search.priceMax ? Number(search.priceMax) : undefined,
-		inStock:
-			search.inStock === "true"
-				? true
-				: search.inStock === "false"
-					? false
-					: undefined,
-		minRating: search.minRating ? Number(search.minRating) : undefined,
-	};
-
-	// Parse pagination
 	const pagination: Pagination = {
 		page: search.page ? Number(search.page) : 1,
 		perPage: 12,
 	};
-
-	// Find categoria by slug
-	const categoria = CATEGORIAS.find((c) => c.slug === params.categoria);
-
-	// If no categoria found, show 404
-	if (!categoria) {
-		return (
-			<div className="flex min-h-svh flex-col items-center justify-center gap-4 p-6">
-				<h1 className="font-heading text-2xl font-bold">
-					{t.product.productNotFound}
-				</h1>
-				<p className="text-muted-foreground">
-					{t.product.productNotFoundDescription}
-				</p>
-				<Link to="/" className="text-primary hover:underline">
-					{t.product.returnHome}
-				</Link>
-			</div>
-		);
-	}
-
-	// Get filtered plantas for this category
-	const result = getCategoriaPlantas(categoria.slug, filters, pagination);
 
 	const handleFiltersChange = (newFilters: Filters) => {
 		const params = new URLSearchParams();
@@ -77,7 +109,6 @@ function CategoryPage() {
 		if (newFilters.minRating !== undefined)
 			params.set("minRating", String(newFilters.minRating));
 		if (pagination.page > 1) params.set("page", String(pagination.page));
-		// Navigate with new filters
 		const searchStr = params.toString();
 		window.location.search = searchStr ? `?${searchStr}` : "";
 	};
@@ -88,13 +119,13 @@ function CategoryPage() {
 
 	const handlePageChange = (page: number) => {
 		const params = new URLSearchParams();
-		if (filters.priceMin !== undefined)
+		if (filters?.priceMin !== undefined)
 			params.set("priceMin", String(filters.priceMin));
-		if (filters.priceMax !== undefined)
+		if (filters?.priceMax !== undefined)
 			params.set("priceMax", String(filters.priceMax));
-		if (filters.inStock !== undefined)
+		if (filters?.inStock !== undefined)
 			params.set("inStock", String(filters.inStock));
-		if (filters.minRating !== undefined)
+		if (filters?.minRating !== undefined)
 			params.set("minRating", String(filters.minRating));
 		if (page > 1) params.set("page", String(page));
 		const searchStr = params.toString();
@@ -126,12 +157,18 @@ function CategoryPage() {
 			</div>
 
 			{/* Filter bar */}
-			<FilterBar
-				filters={filters}
-				onFiltersChange={handleFiltersChange}
-				onClearAll={handleClearAll}
-				locale={locale}
-			/>
+			<Suspense
+				fallback={
+					<div className="h-12 bg-muted animate-pulse rounded mx-4 md:mx-8" />
+				}
+			>
+				<FilterBar
+					filters={filters}
+					onFiltersChange={handleFiltersChange}
+					onClearAll={handleClearAll}
+					locale={locale}
+				/>
+			</Suspense>
 
 			{/* Results count */}
 			{result.total > 0 && (
@@ -158,12 +195,40 @@ function CategoryPage() {
 
 			{/* Pagination */}
 			{result.items.length > 0 && result.totalPages > 1 && (
-				<PaginationComponent
-					currentPage={result.page}
-					totalPages={result.totalPages}
-					onPageChange={handlePageChange}
-				/>
+				<Suspense
+					fallback={
+						<div className="h-12 bg-muted animate-pulse rounded mx-4 md:mx-8" />
+					}
+				>
+					<PaginationComponent
+						currentPage={result.page}
+						totalPages={result.totalPages}
+						onPageChange={handlePageChange}
+					/>
+				</Suspense>
 			)}
+		</div>
+	);
+}
+
+function CategorySkeleton() {
+	return (
+		<div className="flex flex-col gap-6 py-6">
+			{/* Banner skeleton */}
+			<div className="relative h-48 md:h-64 w-full overflow-hidden rounded-lg">
+				<div className="h-full w-full bg-muted animate-pulse" />
+			</div>
+			{/* Filter bar skeleton */}
+			<div className="h-12 bg-muted animate-pulse rounded mx-4 md:mx-8" />
+			{/* Products grid skeleton */}
+			<div className="grid grid-cols-1 gap-4 px-4 md:px-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+				{Array.from({ length: 8 }, () => (
+					<div
+						key={crypto.randomUUID()}
+						className="h-80 bg-muted animate-pulse rounded-lg"
+					/>
+				))}
+			</div>
 		</div>
 	);
 }

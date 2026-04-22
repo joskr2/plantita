@@ -24,3 +24,6 @@ skills
 CLAUDE.md
 skills-lock.json
 
+.gga
+.zed/settings.json
+*.md

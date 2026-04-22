@@ -1,10 +1,33 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { type Banner, BannerCarousel } from "@/components/banner";
-import { SectionRenderer } from "@/components/section";
-import { SECCIONES } from "@/data/secciones";
+import type { Banner } from "@/components/banner";
+import { BannerCarousel } from "@/components/banner/BannerCarousel";
+import { SectionRenderer } from "@/components/section/SectionRenderer";
+import { getSeccionPlantas, SECCIONES } from "@/data/secciones";
 
 export const Route = createFileRoute("/")({
+	loader: async () => {
+		// SSR: resolve secciones data on the server
+		const seccionesData = SECCIONES.map((seccion) => ({
+			...seccion,
+			plantas: getSeccionPlantas(seccion),
+		}));
+
+		return {
+			secciones: seccionesData,
+			banners: MOCK_BANNERS,
+		};
+	},
+	head: () => ({
+		meta: [
+			{ title: "Plantas de Interior y Exterior | Tiendita" },
+			{
+				name: "description",
+				content:
+					"Encuentra las mejores plantas para tu hogar u oficina. Envío gratis en pedidosSelected.",
+			},
+		],
+	}),
 	component: App,
 });
 
@@ -33,11 +56,13 @@ const MOCK_BANNERS: Banner[] = [
 ];
 
 function App() {
+	const { secciones, banners } = Route.useLoaderData();
+
 	return (
 		<div className="flex flex-col gap-6 py-6">
-			<BannerCarousel banners={MOCK_BANNERS} />
+			<BannerCarousel banners={banners} />
 
-			{SECCIONES.map((seccion) => (
+			{secciones.map((seccion) => (
 				<SectionRenderer key={seccion.id} seccion={seccion} locale="es" />
 			))}
 		</div>

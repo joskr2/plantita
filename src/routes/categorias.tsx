@@ -1,14 +1,35 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CategoryCard } from "@/components/category/CategoryCard";
+import { lazy, Suspense } from "react";
+
 import { SECCIONES } from "@/data/secciones";
-import { useIsMobile } from "@/hooks/useIsMobile";
+
+// Lazy load client-only components
+const CategoryCard = lazy(() =>
+	import("@/components/category/CategoryCard").then((m) => ({
+		default: m.CategoryCard,
+	})),
+);
 
 export const Route = createFileRoute("/categorias")({
+	loader: async () => {
+		// SSR: pass secciones data from server
+		return { secciones: SECCIONES };
+	},
+	head: () => ({
+		title: "Categorías | Plantita",
+		meta: [
+			{
+				name: "description",
+				content: "Explora nuestras colecciones de plantas",
+			},
+		],
+	}),
+	pendingComponent: () => <CategoriesSkeleton />,
 	component: CategoriesPage,
 });
 
 function CategoriesPage() {
-	const isMobile = useIsMobile();
+	const { secciones } = Route.useLoaderData();
 
 	return (
 		<div className="flex flex-col gap-6 py-6">
@@ -21,20 +42,41 @@ function CategoriesPage() {
 				</p>
 			</div>
 
-			<div
-				className={`grid gap-4 px-4 md:px-8 ${
-					isMobile ? "grid-cols-2" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-				}`}
-			>
-				{SECCIONES.map((seccion) => (
+			<div className="grid gap-4 px-4 md:px-8 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+				{secciones.map((seccion) => (
 					<Link
 						key={seccion.id}
 						to="/seccion/$slug"
 						params={{ slug: seccion.slug }}
 						className="block"
 					>
-						<CategoryCard seccion={seccion} />
+						<Suspense
+							fallback={
+								<div className="h-64 bg-muted animate-pulse rounded-lg" />
+							}
+						>
+							<CategoryCard seccion={seccion} />
+						</Suspense>
 					</Link>
+				))}
+			</div>
+		</div>
+	);
+}
+
+function CategoriesSkeleton() {
+	return (
+		<div className="flex flex-col gap-6 py-6">
+			<div className="px-4 md:px-8">
+				<div className="h-8 w-48 bg-muted animate-pulse rounded" />
+				<div className="h-4 w-64 bg-muted animate-pulse rounded mt-2" />
+			</div>
+			<div className="grid gap-4 px-4 md:px-8 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+				{Array.from({ length: 8 }, () => (
+					<div
+						key={crypto.randomUUID()}
+						className="h-64 bg-muted animate-pulse rounded-lg"
+					/>
 				))}
 			</div>
 		</div>

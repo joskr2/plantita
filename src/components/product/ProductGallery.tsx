@@ -152,7 +152,6 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
 					aria-label={`${productName} gallery`}
 				>
 					{images.map((url, idx) => (
-						// biome-ignore lint/a11y/useSemanticElements: role=group + aria-roledescription=slide is correct carousel ARIA
 						<div
 							key={stableKey(url, idx)}
 							className="flex w-full shrink-0 snap-start"
