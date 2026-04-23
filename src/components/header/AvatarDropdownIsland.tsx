@@ -1,6 +1,7 @@
 "use client";
 
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useStore } from "@tanstack/react-store";
 import { LogOut, Moon, Package, Sun, User } from "lucide-react";
 import * as React from "react";
 import {
@@ -8,6 +9,7 @@ import {
 	AvatarImage,
 	AvatarRoot,
 } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
 	DropdownMenuContent,
 	DropdownMenuGroup,
@@ -17,19 +19,17 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Usuario } from "@/data/usuarios/usuarios";
 import { useTheme } from "@/hooks/useTheme";
 import type { Locale } from "@/i18n/translations";
 import { translations } from "@/i18n/translations";
+import { authActions, authStore } from "@/store/authStore";
 
 interface AvatarDropdownIslandProps {
-	user: Usuario;
 	locale: Locale;
 	isLoading?: boolean;
 }
 
 export function AvatarDropdownIsland({
-	user,
 	locale,
 	isLoading = false,
 }: AvatarDropdownIslandProps) {
@@ -37,7 +37,9 @@ export function AvatarDropdownIsland({
 	const { isDark, toggleTheme } = useTheme();
 	const navigate = useNavigate();
 	const t = translations[locale];
-	const initials = user.nombre.charAt(0).toUpperCase();
+	const user = useStore(authStore, (state) => state.user);
+	const isAuthenticated = useStore(authStore, (state) => state.isAuthenticated);
+	const initials = user?.nombre.charAt(0).toUpperCase() ?? "?";
 
 	function handleProfile() {
 		navigate({ to: "/profile" });
@@ -48,7 +50,8 @@ export function AvatarDropdownIsland({
 	}
 
 	function handleSignOut() {
-		// sign out logic
+		authActions.logout();
+		navigate({ to: "/" });
 	}
 
 	if (isLoading) {
@@ -56,6 +59,14 @@ export function AvatarDropdownIsland({
 			<AvatarRoot className="cursor-pointer">
 				<Skeleton className="h-8 w-8 rounded-full" />
 			</AvatarRoot>
+		);
+	}
+
+	if (!isAuthenticated || !user) {
+		return (
+			<Button variant="ghost" asChild>
+				<Link to="/login">{t.signIn}</Link>
+			</Button>
 		);
 	}
 

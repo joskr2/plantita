@@ -9,8 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as OrdersRouteImport } from './routes/orders'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CategoriasRouteImport } from './routes/categorias'
 import { Route as CategoriaRouteImport } from './routes/$categoria'
@@ -18,6 +20,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SeccionSlugRouteImport } from './routes/seccion/$slug'
 import { Route as ProductSlugRouteImport } from './routes/product/$slug'
 
+const SignUpRoute = SignUpRouteImport.update({
+  id: '/sign-up',
+  path: '/sign-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -26,6 +33,11 @@ const ProfileRoute = ProfileRouteImport.update({
 const OrdersRoute = OrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CheckoutRoute = CheckoutRouteImport.update({
@@ -64,8 +76,10 @@ export interface FileRoutesByFullPath {
   '/$categoria': typeof CategoriaRoute
   '/categorias': typeof CategoriasRoute
   '/checkout': typeof CheckoutRoute
+  '/login': typeof LoginRoute
   '/orders': typeof OrdersRoute
   '/profile': typeof ProfileRoute
+  '/sign-up': typeof SignUpRoute
   '/product/$slug': typeof ProductSlugRoute
   '/seccion/$slug': typeof SeccionSlugRoute
 }
@@ -74,8 +88,10 @@ export interface FileRoutesByTo {
   '/$categoria': typeof CategoriaRoute
   '/categorias': typeof CategoriasRoute
   '/checkout': typeof CheckoutRoute
+  '/login': typeof LoginRoute
   '/orders': typeof OrdersRoute
   '/profile': typeof ProfileRoute
+  '/sign-up': typeof SignUpRoute
   '/product/$slug': typeof ProductSlugRoute
   '/seccion/$slug': typeof SeccionSlugRoute
 }
@@ -85,8 +101,10 @@ export interface FileRoutesById {
   '/$categoria': typeof CategoriaRoute
   '/categorias': typeof CategoriasRoute
   '/checkout': typeof CheckoutRoute
+  '/login': typeof LoginRoute
   '/orders': typeof OrdersRoute
   '/profile': typeof ProfileRoute
+  '/sign-up': typeof SignUpRoute
   '/product/$slug': typeof ProductSlugRoute
   '/seccion/$slug': typeof SeccionSlugRoute
 }
@@ -97,8 +115,10 @@ export interface FileRouteTypes {
     | '/$categoria'
     | '/categorias'
     | '/checkout'
+    | '/login'
     | '/orders'
     | '/profile'
+    | '/sign-up'
     | '/product/$slug'
     | '/seccion/$slug'
   fileRoutesByTo: FileRoutesByTo
@@ -107,8 +127,10 @@ export interface FileRouteTypes {
     | '/$categoria'
     | '/categorias'
     | '/checkout'
+    | '/login'
     | '/orders'
     | '/profile'
+    | '/sign-up'
     | '/product/$slug'
     | '/seccion/$slug'
   id:
@@ -117,8 +139,10 @@ export interface FileRouteTypes {
     | '/$categoria'
     | '/categorias'
     | '/checkout'
+    | '/login'
     | '/orders'
     | '/profile'
+    | '/sign-up'
     | '/product/$slug'
     | '/seccion/$slug'
   fileRoutesById: FileRoutesById
@@ -128,14 +152,23 @@ export interface RootRouteChildren {
   CategoriaRoute: typeof CategoriaRoute
   CategoriasRoute: typeof CategoriasRoute
   CheckoutRoute: typeof CheckoutRoute
+  LoginRoute: typeof LoginRoute
   OrdersRoute: typeof OrdersRoute
   ProfileRoute: typeof ProfileRoute
+  SignUpRoute: typeof SignUpRoute
   ProductSlugRoute: typeof ProductSlugRoute
   SeccionSlugRoute: typeof SeccionSlugRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sign-up': {
+      id: '/sign-up'
+      path: '/sign-up'
+      fullPath: '/sign-up'
+      preLoaderRoute: typeof SignUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile': {
       id: '/profile'
       path: '/profile'
@@ -148,6 +181,13 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/orders'
       preLoaderRoute: typeof OrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/checkout': {
@@ -200,8 +240,10 @@ const rootRouteChildren: RootRouteChildren = {
   CategoriaRoute: CategoriaRoute,
   CategoriasRoute: CategoriasRoute,
   CheckoutRoute: CheckoutRoute,
+  LoginRoute: LoginRoute,
   OrdersRoute: OrdersRoute,
   ProfileRoute: ProfileRoute,
+  SignUpRoute: SignUpRoute,
   ProductSlugRoute: ProductSlugRoute,
   SeccionSlugRoute: SeccionSlugRoute,
 }

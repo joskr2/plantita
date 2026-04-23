@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import * as React from "react";
 
-import { USUARIO_MOCK, type Usuario } from "@/data/usuarios/usuarios";
 import type { Locale } from "@/i18n/translations";
 import { AvatarDropdownIsland } from "./AvatarDropdownIsland";
 import { CartSheetIsland } from "./CartSheetIsland";
@@ -11,10 +10,9 @@ import { SearchIsland } from "./SearchIsland";
 
 interface HeaderProps {
 	locale: Locale;
-	user?: Usuario;
 }
 
-export function Header({ locale, user = USUARIO_MOCK }: HeaderProps) {
+export function Header({ locale }: HeaderProps) {
 	const [isSearchExpanded, setIsSearchExpanded] = React.useState(false);
 	const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
@@ -50,7 +48,7 @@ export function Header({ locale, user = USUARIO_MOCK }: HeaderProps) {
 							className="flex-1"
 						/>
 						<CartSheetIsland locale={locale} />
-						<AvatarDropdownIsland user={user} locale={locale} />
+						<AvatarDropdownIsland locale={locale} />
 					</div>
 
 					{/* Mobile: search collapsed, cart sheet, hamburger */}
@@ -63,7 +61,6 @@ export function Header({ locale, user = USUARIO_MOCK }: HeaderProps) {
 							/>
 							<CartSheetIsland locale={locale} />
 							<MenuDropdownIsland
-								user={user}
 								locale={locale}
 								isOpen={isMenuOpen}
 								onOpenChange={setIsMenuOpen}

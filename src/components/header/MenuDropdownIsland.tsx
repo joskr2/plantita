@@ -1,6 +1,7 @@
 "use client";
 
 import { useNavigate } from "@tanstack/react-router";
+import { useStore } from "@tanstack/react-store";
 import { LogOut, Menu, Moon, Package, Sun, User } from "lucide-react";
 import {
 	AvatarFallback,
@@ -16,20 +17,18 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { Usuario } from "@/data/usuarios/usuarios";
 import { useTheme } from "@/hooks/useTheme";
 import type { Locale } from "@/i18n/translations";
 import { translations } from "@/i18n/translations";
+import { authActions, authStore } from "@/store/authStore";
 
 interface MenuDropdownIslandProps {
-	user: Usuario;
 	locale: Locale;
 	isOpen: boolean;
 	onOpenChange: (open: boolean) => void;
 }
 
 export function MenuDropdownIsland({
-	user,
 	locale,
 	isOpen,
 	onOpenChange,
@@ -37,7 +36,9 @@ export function MenuDropdownIsland({
 	const { isDark, toggleTheme } = useTheme();
 	const navigate = useNavigate();
 	const t = translations[locale];
-	const initials = user.nombre.charAt(0).toUpperCase();
+	const user = useStore(authStore, (state) => state.user);
+	const isAuthenticated = useStore(authStore, (state) => state.isAuthenticated);
+	const initials = user?.nombre.charAt(0).toUpperCase() ?? "?";
 
 	function handleProfile() {
 		navigate({ to: "/profile" });
@@ -48,7 +49,8 @@ export function MenuDropdownIsland({
 	}
 
 	function handleSignOut() {
-		// sign out logic
+		authActions.logout();
+		navigate({ to: "/" });
 	}
 
 	return (
@@ -66,29 +68,42 @@ export function MenuDropdownIsland({
 				</DropdownMenuTrigger>
 
 				<DropdownMenuContent align="end" className="w-56 z-50">
-					{/* User info header */}
-					<div className="flex items-center gap-3 px-2 py-1.5">
-						<AvatarRoot className="size-9">
-							<AvatarImage src={user.avatarUrl} alt={user.nombre} />
-							<AvatarFallback>{initials}</AvatarFallback>
-						</AvatarRoot>
-						<span className="text-sm font-medium">{user.nombre}</span>
-					</div>
+					{isAuthenticated && user ? (
+						<>
+							{/* User info header */}
+							<div className="flex items-center gap-3 px-2 py-1.5">
+								<AvatarRoot className="size-9">
+									<AvatarImage src={user.avatarUrl} alt={user.nombre} />
+									<AvatarFallback>{initials}</AvatarFallback>
+								</AvatarRoot>
+								<span className="text-sm font-medium">{user.nombre}</span>
+							</div>
 
-					<DropdownMenuSeparator />
+							<DropdownMenuSeparator />
 
-					<DropdownMenuGroup>
-						<DropdownMenuItem onClick={handleProfile}>
-							<User className="mr-2 size-4" aria-hidden="true" />
-							<span>{t.profile.title}</span>
-						</DropdownMenuItem>
-						<DropdownMenuItem onClick={handleOrders}>
-							<Package className="mr-2 size-4" aria-hidden="true" />
-							<span>{t.orders.title}</span>
-						</DropdownMenuItem>
-					</DropdownMenuGroup>
+							<DropdownMenuGroup>
+								<DropdownMenuItem onClick={handleProfile}>
+									<User className="mr-2 size-4" aria-hidden="true" />
+									<span>{t.profile.title}</span>
+								</DropdownMenuItem>
+								<DropdownMenuItem onClick={handleOrders}>
+									<Package className="mr-2 size-4" aria-hidden="true" />
+									<span>{t.orders.title}</span>
+								</DropdownMenuItem>
+							</DropdownMenuGroup>
 
-					<DropdownMenuSeparator />
+							<DropdownMenuSeparator />
+						</>
+					) : (
+						<>
+							<DropdownMenuItem onClick={() => navigate({ to: "/login" })}>
+								<User className="mr-2 size-4" aria-hidden="true" />
+								<span>{t.signIn}</span>
+							</DropdownMenuItem>
+
+							<DropdownMenuSeparator />
+						</>
+					)}
 
 					{/* Theme toggle inside menu */}
 					<DropdownMenuItem onClick={toggleTheme}>
@@ -100,16 +115,20 @@ export function MenuDropdownIsland({
 						<span>{isDark ? t.lightMode : t.darkMode}</span>
 					</DropdownMenuItem>
 
-					<DropdownMenuSeparator />
+					{isAuthenticated && (
+						<>
+							<DropdownMenuSeparator />
 
-					{/* Sign out */}
-					<DropdownMenuItem
-						onClick={handleSignOut}
-						className="text-destructive"
-					>
-						<LogOut className="mr-2 size-4" aria-hidden="true" />
-						<span>{t.signOut}</span>
-					</DropdownMenuItem>
+							{/* Sign out */}
+							<DropdownMenuItem
+								onClick={handleSignOut}
+								className="text-destructive"
+							>
+								<LogOut className="mr-2 size-4" aria-hidden="true" />
+								<span>{t.signOut}</span>
+							</DropdownMenuItem>
+						</>
+					)}
 				</DropdownMenuContent>
 			</DropdownMenuRoot>
 		</div>
